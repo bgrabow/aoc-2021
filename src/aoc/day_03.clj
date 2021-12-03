@@ -48,31 +48,25 @@
 
 (defn oxygen-generator-rating
   [diagnostic-report-rows]
-  (loop [rows diagnostic-report-rows
-         digits []]
-    (if (not-any? seq rows)
-      digits
-      (let [mcd (->> rows
-                     (map first)
-                     most-common-digit)]
-        (recur (->> rows
-                    (filter (comp #{mcd} first))
-                    (map next))
-               (conj digits mcd))))))
+  (first (reduce
+           (fn [rows place]
+             (let [mcd (->> rows
+                            (map #(nth % place))
+                            most-common-digit)]
+               (filter #(= mcd (nth % place)) rows)))
+           diagnostic-report-rows
+           (range (count (first diagnostic-report-rows))))))
 
 (defn co2-generator-rating
   [diagnostic-report-rows]
-  (loop [rows diagnostic-report-rows
-         digits []]
-    (if (not-any? seq rows)
-      digits
-      (let [lcd (->> rows
-                     (map first)
-                     least-common-digit)]
-        (recur (->> rows
-                    (filter (comp #{lcd} first))
-                    (map next))
-               (conj digits lcd))))))
+  (first (reduce
+           (fn [rows place]
+             (let [lcd (->> rows
+                            (map #(nth % place))
+                            least-common-digit)]
+               (filter #(= lcd (nth % place)) rows)))
+           diagnostic-report-rows
+           (range (count (first diagnostic-report-rows))))))
 
 (comment
   (prn (oxygen-generator-rating input))
