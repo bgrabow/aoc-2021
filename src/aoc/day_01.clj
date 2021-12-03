@@ -1,5 +1,6 @@
 (ns aoc.day-01
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [aoc.util :as util]))
 
 (defn count-increasing
   [xs]
@@ -12,7 +13,7 @@
 (def example [199 200 208 210 200 207 240 269 260 263])
 
 (def input
-  (->> (slurp "resources/input/day_01.txt")
+  (->> (util/read-input)
        (str/split-lines)
        (map parse-long)))
 
