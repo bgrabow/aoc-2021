@@ -11,10 +11,13 @@
        (str/split-lines)
        (map #(mapv (comp parse-long str) %))))
 
-(def columns
+(defn columns
+  [input]
   (apply map vector input))
 
-(def freqs (map frequencies columns))
+(defn freqs
+  [columns]
+  (map frequencies columns))
 
 (defn binary-array->long
   [binary-array]
@@ -22,7 +25,7 @@
 
 (defn part-1
   []
-  (let [[gamma epsilon] (->> (map #(sort-by second %) freqs)
+  (let [[gamma epsilon] (->> (map #(sort-by second %) (freqs (columns input)))
                              ((juxt #(map ffirst %) #(map (comp first second) %)))
                              (map binary-array->long))]
     (* gamma epsilon)))
