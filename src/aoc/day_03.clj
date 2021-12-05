@@ -79,3 +79,46 @@
   (let [oxy-rating (binary-array->long (oxygen-generator-rating input))
         co2-rating (binary-array->long (co2-generator-rating input))]
     (* oxy-rating co2-rating)))
+
+(defn extract-trie
+  [rows]
+  (when (some seq rows)
+    (->> rows
+         (group-by first)
+         (sort-by (juxt (comp count second) first))
+         (map (fn [[d rows]] [d (extract-trie (map next rows))])))))
+
+(defn leftmost-traversal
+  [trie]
+  (let [[node-value children] (first trie)]
+    (when node-value
+      (lazy-seq (cons node-value (leftmost-traversal children))))))
+
+(defn rightmost-traversal
+  [trie]
+  (let [[node-value children] (last trie)]
+    (when node-value
+      (lazy-seq (cons node-value (rightmost-traversal children))))))
+
+(defn o2-generator-rating-trie
+  [input]
+  (leftmost-traversal (extract-trie input)))
+
+(defn co2-generator-rating-trie
+  [input]
+  (rightmost-traversal (extract-trie input)))
+
+(defn part-2-trie
+  []
+  (let [oxy-rating (binary-array->long (o2-generator-rating-trie input))
+        co2-rating (binary-array->long (co2-generator-rating-trie input))]
+    (* oxy-rating co2-rating)))
+
+(comment
+  (->> input
+       (group-by first)
+       (sort-by (juxt (comp count second) first))
+       (map (fn [[d rows]] [d (map next rows)])))
+  (leftmost-traversal (extract-trie example-input))
+  (rightmost-traversal (extract-trie example-input))
+  (oxygen-generator-rating example-input))
