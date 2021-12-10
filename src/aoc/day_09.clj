@@ -17,10 +17,10 @@
 
 (defn neighbors
   [mat p]
-  (filter identity
-          (for [dp [[-1 0] [1 0] [0 -1] [0 1]]
-                :let [p' (mapv + p dp)]]
-            (when (lookup mat p') p'))))
+  (for [dp [[-1 0] [1 0] [0 -1] [0 1]]
+        :let [p' (mapv + p dp)]
+        :when (lookup mat p')]
+    p'))
 
 (defn local-minima?
   [mat p]
