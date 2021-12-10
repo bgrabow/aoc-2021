@@ -1,6 +1,7 @@
 (ns aoc.day-10
   (:require [aoc.util :as util]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [aoc.day-07 :as day-07]))
 
 (def input (util/read-input))
 
@@ -43,3 +44,35 @@
        (keep first-corrupted-character)
        (map corrupted-character->score)
        (reduce +)))
+
+(def completing-character->score
+  {\) 1
+   \] 2
+   \} 3
+   \> 4})
+
+(defn completing-string-score
+  [s]
+  (reduce (fn [acc x] (+ x (* 5 acc))) (map completing-character->score s)))
+
+(defn consume-matched-delims
+  [s]
+  (reduce
+    (fn [stack c]
+      (cond
+        (= (matched-delimiters (peek stack)) c) (pop stack)
+
+        (opening-delimiter? c) (conj stack c)
+
+        :else (reduced nil)))
+    []
+    s))
+
+(defn part-2
+  []
+  (->> (str/split-lines input)
+       (keep consume-matched-delims)
+       (map reverse)
+       (map #(map matched-delimiters %))
+       (map completing-string-score)
+       (day-07/median)))
