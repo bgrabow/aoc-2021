@@ -3,7 +3,6 @@
             [aoc.util :as util]
             [clojure.set :as set]
             [malli.core :as malli]
-            [malli.generator :as mg]
             [malli.clj-kondo :as mc]
             [malli.instrument :as mi]))
 
@@ -37,45 +36,6 @@
                                   [dx dy])))
         (disj (set all-pts) p)))))
 
-(defn step
-  [system]
-  (let [increments (zipmap (map first system) (repeat 1))]
-    (->> system
-         (sort-by (comp - second))
-         (reduce
-           (fn [increments [p octopus]]
-             (if (< 9 (+ octopus (get increments p)))
-               (reduce #(update %1 %2 inc) increments (neighbors (keys increments) p))
-               increments))
-           increments)
-         (merge-with
-           (fn [x y]
-             (if (<= (+ x y) 9)
-               (+ x y) 0))
-           (into {} system)))))
-
-(def will-flash?
-  (memoize
-    (fn [system p]
-      (cond
-        (< 9 (get system p)) true
-        (>= 9 (+ (get system p) 8)) false
-        :else (< 9 (+ (get system p)
-                      (count
-                        (keep
-                          (partial will-flash? system)
-                          (neighbors (keys system) p)))))))))
-
-(def increment
-  (memoize
-    (fn [system p]
-      (+ (get system p)
-         1
-         (count
-           (keep #(> % 9)
-                 (map (partial increment system)
-                      (neighbors system p))))))))
-
 (defn map-vals
   [m f]
   (reduce
@@ -104,7 +64,7 @@
               _ (assert (malli/validate TemporaryOctopusSystem charged))]
           (if (= charging charged)
             (do
-              ;(prn wave)
+              #_(prn wave)
               (merge expended flashing charged))
             (recur (inc wave) (merge expended flashing) charged))))
       (map-vals #(if (> % 9) 0 %))))
@@ -125,9 +85,6 @@
   [system]
   (flash-tens (map-vals system inc)))
 
-(comment (mg/generate OctopusSystem)
-         (map print-system (take 10 (iterate brute-step (parse-input example-input)))))
-
 (defn count-flashes
   [system]
   (count (filter #{0} (vals system))))
@@ -146,7 +103,6 @@
                               %1))
              (first))))
 
-(comment (print-system (step (step (step (parse-input example-input))))))
 (comment (malli/function-schemas)
          (mi/instrument!))
 
