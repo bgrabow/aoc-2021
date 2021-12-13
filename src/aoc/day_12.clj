@@ -65,22 +65,49 @@
   []
   (time (let [graph (input->graph input)]
           (-> ((fn num-paths-to-end
-                 [visited path visited-twice]
-                 #_(prn visited path visited-twice)
-                 (if (= "end" (peek path))
+                 [visited pos visited-twice]
+                 #_(prn visited pos visited-twice)
+                 (if (= "end" pos)
                    1
-                   (if-let [open-neighbors (->> (get graph (peek path))
+                   (if-let [open-neighbors (->> (get graph pos)
                                                 (remove #(and (seq visited-twice)
                                                               (small-room? %)
                                                               (visited %)))
                                                 (seq))]
                      (->> (map #(num-paths-to-end
                                   (cond-> visited (small-room? %) (conj %))
-                                  (conj path %)
+                                  %
                                   (cond-> visited-twice (visited %) (conj %)))
                                open-neighbors)
                           (reduce +))
                      0)))
                #{"start"}
-               ["start"]
+               "start"
                #{})))))
+
+(comment
+  (time
+    (do
+      (def num-paths-to-end
+        (memoize
+          (fn [graph visited pos visited-twice]
+            (if (= "end" pos)
+              1
+              (if-let [open-neighbors (->> (get graph pos)
+                                           (remove #(and (seq visited-twice)
+                                                         (small-room? %)
+                                                         (visited %)))
+                                           (seq))]
+                (->> (map #(num-paths-to-end
+                             graph
+                             (cond-> visited (small-room? %) (conj %))
+                             %
+                             (cond-> visited-twice (visited %) (conj %)))
+                          open-neighbors)
+                     (reduce +))
+                0)))))
+      (num-paths-to-end
+        (input->graph input)
+        #{"start"}
+        "start"
+        #{}))))
