@@ -14,3 +14,11 @@
   []
   `(let [ns# *ns*]
      (read-input* ns#)))
+
+(defn map-vals
+  [m f]
+  (reduce
+    (fn [m [k v]]
+      (assoc m k (f v)))
+    {}
+    m))

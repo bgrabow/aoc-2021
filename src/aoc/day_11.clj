@@ -4,7 +4,8 @@
             [clojure.set :as set]
             [malli.core :as malli]
             [malli.clj-kondo :as mc]
-            [malli.instrument :as mi]))
+            [malli.instrument :as mi]
+            [clojure.data.priority-map :as pm]))
 
 (def Point2D-10x10 [:vector {:min 2 :max 2} [:int {:min 0 :max 9}]])
 (def OctopusSystem [:map-of Point2D-10x10 [:int {:min 0 :max 9}]])
@@ -36,14 +37,6 @@
                                   [dx dy])))
         (disj (set all-pts) p)))))
 
-(defn map-vals
-  [m f]
-  (reduce
-    (fn [m [k v]]
-      (assoc m k (f v)))
-    {}
-    m))
-
 (defn prn-identity [x] (prn x) x)
 
 (defn flash-tens
@@ -63,14 +56,25 @@
                            (merge-with + charging))
               _ (assert (malli/validate TemporaryOctopusSystem charged))]
           (if (= charging charged)
-            (do
-              #_(prn wave)
-              (merge expended flashing charged))
+            (merge expended flashing charged)
             (recur (inc wave) (merge expended flashing) charged))))
-      (map-vals #(if (> % 9) 0 %))))
+      (util/map-vals #(if (> % 9) 0 %))))
+
+(defn flash-priority
+  [system]
+  (let [system (apply pm/priority-map-by > system)
+        _p (pop system)]
+    (loop [system system
+           flashed {}]
+      (if (empty? system)
+        flashed
+        ()))))
+
+(-> (pm/priority-map-by > :a 1 :b 2)
+    (update :a + 3))
 
 (comment
-  (flash-tens (map-vals (parse-input example-input) (comp inc inc)))
+  (flash-tens (util/map-vals (parse-input example-input) (comp inc inc)))
   (malli/validate OctopusSystem (parse-input example-input)))
 
 (defn print-system
@@ -83,7 +87,7 @@
 
 (defn brute-step
   [system]
-  (flash-tens (map-vals system inc)))
+  (flash-tens (util/map-vals system inc)))
 
 (defn count-flashes
   [system]
