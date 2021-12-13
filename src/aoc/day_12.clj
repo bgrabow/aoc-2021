@@ -90,11 +90,11 @@
     (do
       (def num-paths-to-end
         (memoize
-          (fn [graph visited pos visited-twice]
+          (fn [graph visited pos visited-twice?]
             (if (= "end" pos)
               1
               (if-let [open-neighbors (->> (get graph pos)
-                                           (remove #(and (seq visited-twice)
+                                           (remove #(and visited-twice?
                                                          (small-room? %)
                                                          (visited %)))
                                            (seq))]
@@ -102,12 +102,12 @@
                              graph
                              (cond-> visited (small-room? %) (conj %))
                              %
-                             (cond-> visited-twice (visited %) (conj %)))
+                             (or visited-twice? (boolean (visited %))))
                           open-neighbors)
                      (reduce +))
                 0)))))
-      (num-paths-to-end
-        (input->graph input)
-        #{"start"}
-        "start"
-        #{}))))
+      (time (num-paths-to-end
+              (input->graph input)
+              #{"start"}
+              "start"
+              false)))))
