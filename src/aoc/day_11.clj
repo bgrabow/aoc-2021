@@ -3,9 +3,9 @@
             [aoc.util :as util]
             [clojure.set :as set]
             [malli.core :as malli]
-            [malli.generator :as mg]
             [malli.clj-kondo :as mc]
-            [malli.instrument :as mi]))
+            [malli.instrument :as mi]
+            [clojure.data.priority-map :as pm]))
 
 (def Point2D-10x10 [:vector {:min 2 :max 2} [:int {:min 0 :max 9}]])
 (def OctopusSystem [:map-of Point2D-10x10 [:int {:min 0 :max 9}]])
@@ -37,53 +37,6 @@
                                   [dx dy])))
         (disj (set all-pts) p)))))
 
-(defn step
-  [system]
-  (let [increments (zipmap (map first system) (repeat 1))]
-    (->> system
-         (sort-by (comp - second))
-         (reduce
-           (fn [increments [p octopus]]
-             (if (< 9 (+ octopus (get increments p)))
-               (reduce #(update %1 %2 inc) increments (neighbors (keys increments) p))
-               increments))
-           increments)
-         (merge-with
-           (fn [x y]
-             (if (<= (+ x y) 9)
-               (+ x y) 0))
-           (into {} system)))))
-
-(def will-flash?
-  (memoize
-    (fn [system p]
-      (cond
-        (< 9 (get system p)) true
-        (>= 9 (+ (get system p) 8)) false
-        :else (< 9 (+ (get system p)
-                      (count
-                        (keep
-                          (partial will-flash? system)
-                          (neighbors (keys system) p)))))))))
-
-(def increment
-  (memoize
-    (fn [system p]
-      (+ (get system p)
-         1
-         (count
-           (keep #(> % 9)
-                 (map (partial increment system)
-                      (neighbors system p))))))))
-
-(defn map-vals
-  [m f]
-  (reduce
-    (fn [m [k v]]
-      (assoc m k (f v)))
-    {}
-    m))
-
 (defn prn-identity [x] (prn x) x)
 
 (defn flash-tens
@@ -103,14 +56,25 @@
                            (merge-with + charging))
               _ (assert (malli/validate TemporaryOctopusSystem charged))]
           (if (= charging charged)
-            (do
-              ;(prn wave)
-              (merge expended flashing charged))
+            (merge expended flashing charged)
             (recur (inc wave) (merge expended flashing) charged))))
-      (map-vals #(if (> % 9) 0 %))))
+      (util/map-vals #(if (> % 9) 0 %))))
+
+(defn flash-priority
+  [system]
+  (let [system (apply pm/priority-map-by > system)
+        _p (pop system)]
+    (loop [system system
+           flashed {}]
+      (if (empty? system)
+        flashed
+        ()))))
+
+(-> (pm/priority-map-by > :a 1 :b 2)
+    (update :a + 3))
 
 (comment
-  (flash-tens (map-vals (parse-input example-input) (comp inc inc)))
+  (flash-tens (util/map-vals (parse-input example-input) (comp inc inc)))
   (malli/validate OctopusSystem (parse-input example-input)))
 
 (defn print-system
@@ -123,10 +87,7 @@
 
 (defn brute-step
   [system]
-  (flash-tens (map-vals system inc)))
-
-(comment (mg/generate OctopusSystem)
-         (map print-system (take 10 (iterate brute-step (parse-input example-input)))))
+  (flash-tens (util/map-vals system inc)))
 
 (defn count-flashes
   [system]
@@ -146,7 +107,6 @@
                               %1))
              (first))))
 
-(comment (print-system (step (step (step (parse-input example-input))))))
 (comment (malli/function-schemas)
          (mi/instrument!))
 
