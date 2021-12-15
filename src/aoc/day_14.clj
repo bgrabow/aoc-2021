@@ -138,3 +138,30 @@
          (sort)
          ((juxt last first))
          (apply -))))
+
+(def monomer-count*
+  (memoize
+    (fn [insertion-rules polymer cycles-remaining]
+      (if (zero? cycles-remaining)
+        (frequencies (rest polymer))
+        (apply merge-with +
+               (map #(monomer-count*
+                       insertion-rules
+                       (str (first %) (insertion-rules (apply str %)) (second %))
+                       (dec cycles-remaining))
+                    (partition 2 1 polymer)))))))
+
+(defn monomer-count
+  [insertion-rules polymer cycles-remaining]
+  (merge-with +
+              {(first polymer) 1}
+              (monomer-count* insertion-rules polymer cycles-remaining)))
+
+(defn part-2-recursive
+  []
+  (time (let [[polymer insertion-rules] (parse-input input)]
+          (->> (monomer-count insertion-rules polymer 40)
+               (map second)
+               (sort)
+               ((juxt last first))
+               (apply -)))))
