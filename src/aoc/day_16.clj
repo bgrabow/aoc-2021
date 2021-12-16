@@ -32,11 +32,16 @@
 
 (defn parse-literal
   [s]
-  {:packet/literal-value (-> (->> (partition 5 s)
-                                  (take-until #(= \0 (first %)))
-                                  (mapcat next)
-                                  (apply str))
-                             (Long/valueOf 2))})
+  (let [consumed (->> (partition 5 s)
+                      (take-until #(= \0 (first %))))
+        remainder (drop (->> (map count consumed)
+                             (reduce +))
+                        s)]
+    [{:packet/literal-value (-> (->> consumed
+                                     (mapcat next)
+                                     (apply str))
+                                (Long/valueOf 2))}
+     remainder]))
 
 (defn parse-operator
   [_s])
@@ -50,10 +55,13 @@
 (defn parse-packet
   [bin-str]
   (let [version (apply str (take 3 bin-str))
-        packet-type (apply str (take 3 (drop 3 bin-str)))]
-    (merge {:packet/version version
-            :packet/type    packet-type}
-           ((packet-parser packet-type) (drop 6 bin-str)))))
+        packet-type (apply str (take 3 (drop 3 bin-str)))
+        [packet-contents remainder] ((packet-parser packet-type) (drop 6 bin-str))]
+    [(merge {:packet/version version
+             :packet/type    packet-type}
+            packet-contents)
+     remainder]))
+
 
 (comment
   (parse-packet (parse-input input))
