@@ -1,6 +1,8 @@
 (ns aoc.day-16
   (:require [aoc.util :as util]
-            [instaparse.core :as insta]))
+            [instaparse.core :as insta]
+            [clojure.test :as t]
+            [matcher-combinators.test :refer [match?]]))
 
 (def input (util/read-input))
 (def samples
@@ -178,31 +180,117 @@
          "00111000000000000110111101000101001010010001001000000000")))
 
 (def PacketGrammar
-  "S = packet tail
+  "S = packet unparsed-tail
   digit = '0' | '1'
   packet = version contents
-  version = digit digit digit
+  version = #'[01]{3}'
   literal-type = '100'
-  contents = literal-type literal-contents
+  operator-type = '000' | '001' | '010' | '011' | '101' | '110' | '111'
+  contents = (literal-type literal-contents) | (operator-type)
   literal-contents = {non-terminal-bits}+ terminal-bits
+  operator-contents = ('0' bit-length-digits packet+) | ('1' n-packets-digits packet+)
+  unparsed-operator = #'[01]+'
+  unparsed-tail = #'[01]+'
+  n-packets-digits = #'[01]{11}'
+  bit-length-digits = #'[01]{15}'
   non-terminal-bits = '1' value-bits
   terminal-bits = '0' value-bits
-  value-bits = digit digit digit digit
-  tail = digit+")
+  ;value-bits = #'[01]{4}'
+  value-bits = digit{4}
+  tail = '0'+")
+
+(def PacketGrammarABNF
+  "S = packet unparsed-tail
+  digit = '0' / '1'
+  packet = version contents
+  version = #'[01]{3}'
+  literal-type = '100'
+  operator-type = '000' / '001' / '010' / '011' / '101' / '110' / '111'
+  contents = (literal-type literal-contents) / (operator-type)
+  literal-contents = 1*non-terminal-bits terminal-bits
+  operator-contents = ('0' bit-length-digits 1*packet) / ('1' n-packets-digits 1*packet)
+  unparsed-operator = 1*BIT
+  unparsed-tail = 1*BIT
+  n-packets-digits = 11*11BIT
+  bit-length-digits = 15*15BIT
+  non-terminal-bits = '1' value-bits
+  terminal-bits = '0' value-bits
+  value-bits = 4*4BIT
+  tail = 1*'0'")
 
 (comment
+  (insta/parse (insta/parser PacketGrammarABNF :input-format :abnf)
+               (:1-literal-packet samples) :partial true)
+  (insta/parse (insta/parser PacketGrammarABNF :input-format :abnf)
+               (:2-subpackets samples) :partial true)
   (insta/parse (insta/parser PacketGrammar)
-               (:1-literal-packet samples)))
+               (:3-subpackets samples) :partial true)
+  (insta/parse (insta/parser PacketGrammar)
+               (parse-input input)))
 
-(def for-later
-  "operator-type = 3 * digit
-  contents = ( literal-type literal-contents ) | ( operator-type operator-contents )")
+(defn packet-chunk
+  [packet-type]
+  (case packet-type
+    "100" :chunk/literal-value))
 
+(defn consume-literal-value
+  [state]
+  (let [s (:remaining state)
+        consumed (->> (partition 5 s)
+                      (take-until #(= \0 (first %))))
+        remainder (apply str (drop (->> (map count consumed)
+                                        (reduce +))
+                                   s))
+        literal-value (-> (->> consumed
+                               (mapcat next)
+                               (apply str))
+                          (Long/valueOf 2))]
+    {:tree (assoc-in
+             (:tree state)
+             (concat (:cursor state) [:packet/literal-value])
+             literal-value)
+     :context (pop (:context state))
+     :cursor (:cursor state)
+     :remaining remainder}))
 
-(def chunks
-  {:packet [:packet/version :packet/type :packet/contents]})
+(defn consume-packet-header
+  [state]
+  (let [s (:remaining state)
+        packet-type (subs s 3 6)]
+    {:tree      (assoc (:tree state)
+                  :packet/version (subs s 0 3)
+                  :packet/type packet-type)
+     :context   (conj (pop (vec (:context state))) (packet-chunk packet-type))
+     :cursor    []
+     :remaining (subs s 6)}))
 
-(defn consume-bits
-  [_expected-chunks _bits])
+(defn consume-chunk
+  [state]
+  (case (peek (:context state))
+    :chunk/literal-value (consume-literal-value state)
+    :chunk/packet-header (consume-packet-header state)
+    state))
 
-(consume-bits :packet (:1-literal-packet samples))
+(t/deftest consume-chunk-test
+  (t/testing "Consuming a chunk with no prior context starts a new packet"
+    (t/is (match? {:tree {:packet/version "110"
+                          :packet/type "100"}
+                   :remaining "101111111000101000"}
+             (consume-chunk {:remaining "110100101111111000101000"
+                             :context [:chunk/packet-header]}))))
+  (t/testing "When a literal packet's header is read, the next chunk consumed is the literal value"
+    (t/is (match? {:tree {:packet/version "110"
+                          :packet/type "100"
+                          :packet/literal-value 2021}
+                   :remaining "000"}
+                  (last (take 3 (iterate consume-chunk {:remaining "110100101111111000101000"
+                                                        :context [:chunk/packet-header]}))))))
+  (t/testing "Continuing to consume chunks past the end of a chunk produces a fixed point"
+    (t/is (match? {:tree {:packet/version "110"
+                          :packet/type "100"
+                          :packet/literal-value 2021}
+                   :remaining "000"}
+                  (last (take 4 (iterate consume-chunk {:remaining "110100101111111000101000"
+                                                        :context [:chunk/packet-header]})))))))
+
+(t/run-test consume-chunk-test)
