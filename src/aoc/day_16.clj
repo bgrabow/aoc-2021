@@ -1,5 +1,6 @@
 (ns aoc.day-16
-  (:require [aoc.util :as util]))
+  (:require [aoc.util :as util]
+            [instaparse.core :as insta]))
 
 (def input (util/read-input))
 (def samples
@@ -175,3 +176,33 @@
        (split-into-sizes
          [3 3 1 15 3 3 5 3 3 5 5]
          "00111000000000000110111101000101001010010001001000000000")))
+
+(def PacketGrammar
+  "S = packet tail
+  digit = '0' | '1'
+  packet = version contents
+  version = digit digit digit
+  literal-type = '100'
+  contents = literal-type literal-contents
+  literal-contents = {non-terminal-bits}+ terminal-bits
+  non-terminal-bits = '1' value-bits
+  terminal-bits = '0' value-bits
+  value-bits = digit digit digit digit
+  tail = digit+")
+
+(comment
+  (insta/parse (insta/parser PacketGrammar)
+               (:1-literal-packet samples)))
+
+(def for-later
+  "operator-type = 3 * digit
+  contents = ( literal-type literal-contents ) | ( operator-type operator-contents )")
+
+
+(def chunks
+  {:packet [:packet/version :packet/type :packet/contents]})
+
+(defn consume-bits
+  [_expected-chunks _bits])
+
+(consume-bits :packet (:1-literal-packet samples))
