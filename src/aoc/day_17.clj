@@ -1,7 +1,9 @@
 (ns aoc.day-17
   (:require [clojure.string :as str]
             [aoc.util :as util]
-            [clojure.test :as t]))
+            [clojure.test :as t]
+            [clojure.edn :as edn]
+            [clojure.math.combinatorics :as combinatorics]))
 
 (def samples "[1,2]\n[[1,2],3]\n[9,[8,7]]\n[[1,9],[8,5]]\n[[[[1,2],[3,4]],[[5,6],[7,8]]],9]\n[[[9,[3,8]],[[0,9],6]],[[[3,7],[4,9]],3]]\n[[[[1,3],[5,3]],[[1,3],[8,7]]],[[[4,9],[6,9]],[[8,2],[7,3]]]]")
 (def input (util/read-input))
@@ -62,9 +64,6 @@
                (< 4 depth))
         (reverse (into (explode-into (nnext left) (first left))
                        (cons 0 (explode-into (nnext right) (first right)))))
-        #_(recur (explode-into (nnext left) (first left))
-                 (cons 0 (explode-into (nnext right) (first right)))
-                 (dec depth))
 
         #_{:left left :right right :depth depth}
         (case (first right)
@@ -121,18 +120,64 @@
 (defn snailfish-reduce
   [x]
   (iterate-until-fixed
-    (comp (partial iterate-until-fixed explode))
+    (comp split (partial iterate-until-fixed explode))
     x))
 
 (comment
-  (snailfish-reduce (parse-input "[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]")))
+  (snailfish-reduce (parse-input "[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]"))
+  (snailfish-reduce (parse-input "[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]")))
+
+(t/deftest reduce-test
+  (t/is (= (parse-input "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]")
+           (snailfish-reduce (parse-input "[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]")))))
 
 (defn snailfish-add
   [x y]
-  (list "[" (snailfish-reduce x) (snailfish-reduce y) "]"))
+  (snailfish-reduce (apply list (concat ["["] (snailfish-reduce x) (snailfish-reduce y) ["]"]))))
+
+(defn snailfish-sum
+  [xs]
+  (reduce snailfish-add xs))
+
+(t/deftest sum-test
+  (t/is (= (apply str (parse-input "[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]"))
+           (apply str (snailfish-sum (map parse-input (str/split-lines "[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]\n[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]\n[[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]\n[[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]\n[7,[5,[[3,8],[1,4]]]]\n[[2,[2,2]],[8,[8,1]]]\n[2,9]\n[1,[[[9,3],9],[[9,0],[0,7]]]]\n[[[5,[7,4]],7],1]\n[[[[4,2],2],6],[8,7]]"))))))
+  (t/is (= (apply str (parse-input "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]"))
+           (apply str (snailfish-sum (map parse-input (str/split-lines "[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]\n[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]")))))))
+
+(defn magnitude
+  [tree]
+  (if (number? tree)
+    tree
+    (+ (* 3 (magnitude (first tree)))
+       (* 2 (magnitude (second tree))))))
+
+(defn str->tree
+  [s]
+  (edn/read-string (apply str (interpose "," s))))
+
+(defn part-1
+  []
+  (magnitude
+    (str->tree
+      (snailfish-sum
+        (map parse-input
+             (str/split-lines input))))))
+
+(defn part-2
+  []
+  (apply max
+         (map (comp magnitude str->tree snailfish-sum)
+              (combinatorics/permuted-combinations
+                (map parse-input
+                     (str/split-lines
+                       input))
+                2))))
 
 (comment
   (reduce snailfish-add
           (map parse-input (str/split-lines samples)))
+
+  (map snailfish-reduce (map parse-input (str/split-lines samples)))
 
   (map explode (map parse-input (str/split-lines samples))))
