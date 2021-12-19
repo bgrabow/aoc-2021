@@ -22,3 +22,7 @@
       (assoc m k (f v)))
     {}
     m))
+
+(defn transpose
+  [colls]
+  (apply map vector colls))

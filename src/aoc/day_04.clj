@@ -27,10 +27,6 @@
 
 (def input (util/read-input))
 
-(defn transpose
-  [colls]
-  (apply map vector colls))
-
 (defn parse-board
   [board-str]
   (let [xs (map parse-long
@@ -39,7 +35,7 @@
                     (str/join \space board-str))
                   #"\s+"))
         rows (partition 5 xs)
-        cols (transpose rows)
+        cols (util/transpose rows)
         _tlbr-diag (flatten (partition 1 6 xs))
         _trbl-diag (flatten (drop-last 1 (drop 1 (partition 1 4 xs))))]
     {:all (set xs)
