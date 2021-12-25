@@ -26,3 +26,16 @@
 (defn transpose
   [colls]
   (apply map vector colls))
+
+(defn iterate-until-fixed
+  "Iterates f on x in the style of clojure.core/iterate. Returns the sequence of results up until
+  the sequence reaches a fixed point.
+
+  e.g.
+  (defn ensmallen
+    [x]
+    (long (Math/floor (Math/sqrt x))))
+
+  (iterate-until-fixed ensmallen 99) => (99, 9, 3, 1)"
+  [f x]
+  (cons x (map second (take-while #(apply not= %) (partition 2 1 (iterate f x))))))
