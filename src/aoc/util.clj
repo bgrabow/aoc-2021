@@ -25,7 +25,7 @@
 
 (defn transpose
   [colls]
-  (apply map vector colls))
+  (vec (apply map vector colls)))
 
 (defn iterate-until-fixed
   "Iterates f on x in the style of clojure.core/iterate. Returns the sequence of results up until
@@ -39,3 +39,21 @@
   (iterate-until-fixed ensmallen 99) => (99, 9, 3, 1)"
   [f x]
   (cons x (map second (take-while #(apply not= %) (partition 2 1 (iterate f x))))))
+
+(defn parse-2d-grid
+  [f s]
+  (->> (str/split-lines s)
+       (map-indexed
+         (fn [y row]
+           (keep-indexed
+             (fn [x c]
+               (f [x y] c))
+             row)))
+       (apply concat)
+       (into {})))
+
+(defn take-until
+  [f coll]
+  (let [[l r] (split-with (complement f) coll)]
+    (concat l (take 1 r))))
+

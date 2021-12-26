@@ -13,16 +13,11 @@
 
 (defn parse-cucumbers
   [input]
-  (into {}
-        (apply concat
-               (map-indexed
-                 (fn [y line]
-                   (keep-indexed
-                     (fn [x c]
-                       (when (not= \. c)
-                         [[x y] c]))
-                     line))
-                 (str/split-lines input)))))
+  (util/parse-2d-grid
+    (fn [p c]
+      (when (not= \. c)
+        [p c]))
+    input))
 
 (defn parse-bounds
   [input]

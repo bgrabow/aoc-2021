@@ -43,11 +43,6 @@
     (past-target? target p) false
     :else (hits-target? target (step [p v]))))
 
-(defn take-until
-  [f coll]
-  (let [[l r] (split-with (complement f) coll)]
-    (concat l (take 1 r))))
-
 (defn done?
   [target [p _v]]
   (or (in-target? target p)
@@ -55,7 +50,7 @@
 
 (defn trajectory
   [target [p v]]
-  (take-until (partial done? target) (iterate step [p v])))
+  (util/take-until (partial done? target) (iterate step [p v])))
 
 (defn print-trajectory
   [target trajectory]

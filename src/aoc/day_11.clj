@@ -18,15 +18,10 @@
 
 (defn parse-input
   [input]
-  (->> (str/split-lines input)
-       (map-indexed
-         (fn [y row]
-           (map-indexed
-             (fn [x octopus]
-               [[x y] (parse-long (str octopus))])
-             row)))
-       (apply concat)
-       (into {})))
+  (util/parse-2d-grid
+    (fn [p c]
+      [p (parse-long (str c))])
+    input))
 
 (def neighbors
   (memoize
