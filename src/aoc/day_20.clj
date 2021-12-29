@@ -113,39 +113,6 @@
                (into {}))))
     (step-2 decoder (step-2 decoder image))))
 
-(defn top-left-square
-  [n image]
-  (let [[ymin] ((juxt first last) (sort (map second (keys image))))
-        [xmin] ((juxt first last) (sort (map first (keys image))))]
-    (->> (filter (comp #(and (< (first %) (+ n xmin))
-                             (< (second %) (+ n ymin))) first) image)
-         (into {}))))
-
-(defn some-scans
-  [image range-x range-y]
-  (for [y range-y
-        x range-x]
-    [[x y] (enhancement-bits image [x y])]))
-
-(comment
-  (let [{:keys [decoder image]} (parse-input input)]
-    (->> (iterate (partial step decoder) image)
-         (take 3)
-         ;(last)
-         ;(count))))
-         ;(map (partial top-left-square 5))
-         (map #(print-image-range % (range -2 5) (range -2 5)))
-         (map #(some-scans % (range -2 5) (range -2 5))))))
-  ;(enhancement-index image [2 2]))
-;(map print-image)))
-
-(comment
-  (let [{:keys [decoder image]} (parse-input input)]
-    (float (/ (count (step decoder image))
-              (count image)))
-    (float (/ (count (filter #{1} decoder)) (count (filter #{0} decoder))))
-    (print-image (top-left-square 10 (step decoder image)))))
-
 (comment
   (count (mapcat neighborhood (keys (:image (parse-input sample))))))
 
@@ -169,4 +136,11 @@
   (let [{:keys [decoder image]} (parse-input input)]
     (->> (take 2 (iterate (partial epileptic-2-step decoder) image))
          (last)
+         (count))))
+
+(defn part-2
+  []
+  (let [{:keys [decoder image]} (parse-input input)]
+    (->> (drop (/ 50 2) (iterate (partial epileptic-2-step decoder) image))
+         (first)
          (count))))
