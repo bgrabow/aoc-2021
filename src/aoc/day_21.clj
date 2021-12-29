@@ -63,7 +63,7 @@
     {:too-low #{171500}}))
 
 (def dirac-turn-frequencies
-  (frequencies (map #(apply + %) (combinatorics/permuted-combinations [1 1 1 2 2 2 3 3 3] 3))))
+  (frequencies (map #(apply + %) (combinatorics/selections [1 2 3] 3))))
 
 (defn dirac-step
   [state step-size]
