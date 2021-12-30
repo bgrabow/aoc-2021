@@ -6,7 +6,7 @@
 (def input (util/read-input))
 (def init-area {:x [-50 50] :y [-50 50] :z [-50 50]})
 
-(defn parse-cuboid
+(defn parse-reboot-step
   [s]
   (let [state (re-find #"off|on" s)]
     (into {:state state}
@@ -16,7 +16,7 @@
 (defn parse-input
   [input]
   (->> (str/split-lines input)
-       (map parse-cuboid)))
+       (map parse-reboot-step)))
 
 (defn ranges-overlap?
   [[a-min a-max] [b-min b-max]]
@@ -43,14 +43,18 @@
        (apply <= (interpose y (:y cuboid)))
        (apply <= (interpose z (:z cuboid)))))
 
-(comment
+(defn process-step
+  [cubes-on step]
+  (case (:state step)
+    "off" (reduce disj cubes-on (cubes step))
+    "on" (reduce conj cubes-on (cubes step))))
+
+(defn part-1
+  []
   (->> (parse-input input)
-       (filter #(cubes-intersect? init-area %))))
-;(filter (comp #{"on"} :state)))
-     ;(mapcat cubes)
-     ;(filter (partial in-cuboid? init-area))
-     ;(apply set/union)
-     ;(count))
+       (filter #(cubes-intersect? init-area %))
+       (reduce process-step #{})
+       (count)))
 
 (comment
   (cubes-intersect?
