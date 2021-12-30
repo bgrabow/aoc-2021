@@ -1,8 +1,6 @@
 (ns aoc.day-22
   (:require [aoc.util :as util]
-            [clojure.string :as str]
-            [clojure.math.combinatorics :as combinatorics]))
-            ;[clojure.set :as set]))
+            [clojure.string :as str]))
 
 (def input (util/read-input))
 (def init-area {:x [-50 50] :y [-50 50] :z [-50 50]})
@@ -42,12 +40,6 @@
         z (apply range (update (:z cuboid) 1 inc))]
     [x y z]))
 
-(defn in-cuboid?
-  [cuboid [x y z]]
-  (and (apply <= (interpose x (:x cuboid)))
-       (apply <= (interpose y (:y cuboid)))
-       (apply <= (interpose z (:z cuboid)))))
-
 (defn process-step
   [cubes-on step]
   (case (:state step)
@@ -61,15 +53,6 @@
        (reduce process-step #{})
        (count)))
 
-(comment
-  (cubes-intersect?
-    {:state "on", :x [31699 37219], :y [-36521 -23135], :z [61018 77965]}
-    {:state "on", :x [-13575 31700], :y [-33410 -19901], :z [59130 95383]})
-
-  (apply ranges-overlap? [[31699 37219] [-13575 31700]])
-  (apply ranges-overlap? [[-36521 -23135] [-33410 -19901]])
-  (apply ranges-overlap? [[61018 77965] [59130 95383]]))
-
 (defn cube-intersection
   [a b]
   (let [intersectoid
@@ -80,24 +63,6 @@
     (when (every? #(apply <= %) (map intersectoid [:x :y :z]))
       intersectoid)))
 
-#_(defn process-overlaps
-    ([processed new-step]
-     (case (:state new-step)
-       "off" (apply conj processed
-                    (->> processed
-                         (filter (comp #{"off"} :state))
-                         (keep (partial cube-intersection new-step))
-                         (map (partial merge {:state "on"}))
-                         (mapcat (partial vector new-step))))
-       "on" (apply conj processed
-                   (->> processed
-                        (filter (comp #{"on"} :state))
-                        (keep (partial cube-intersection new-step))
-                        (map (partial merge {:state "off"}))
-                        (mapcat (partial vector new-step))))))
-    ([new-step]
-     [new-step]))
-
 (defn cube-volume
   [cube]
   (cond-> (apply * (map
@@ -107,28 +72,6 @@
                        reverse)
                      ((juxt :x :y :z) cube)))
           (= "off" (:state cube)) -))
-
-(comment
-  (apply cube-intersection (parse-input "on x=10..12,y=10..12,z=10..12\non x=11..13,y=11..13,z=11..13"))
-  (cube-intersection {:state "on", :x [-45 0], :y [-44 9], :z [-39 10]}
-                     {:state "on", :x [-22 26], :y [-21 25], :z [10 43]})
-  (reductions process-overlaps [] [{:state "on", :x [-45 0], :y [-44 9], :z [-39 10]}
-                                   {:state "on", :x [-22 26], :y [-21 25], :z [10 43]}])
-  (apply map vector ((juxt identity (partial reductions process-overlaps []))
-                     (parse-input (:4-step samples))))
-  (->> (reductions process-overlaps [] (drop-last 2 (parse-input (:22-step samples))))
-       (map (partial map cube-volume))
-       (map (partial reduce +))))
-
-(comment
-  (let [[a & more] (parse-input (:4-step samples))]
-    (loop [processed [a]
-           new-step (first more)]
-      (apply conj processed new-step
-             (->> processed
-                  (filter (comp #{"on"} :state))
-                  (keep (partial cube-intersection new-step))
-                  (map (partial merge {:state "off"})))))))
 
 (defn process-overlaps
   [processed new-step]
@@ -146,41 +89,15 @@
 
 (defn part-2
   []
-  (->> (count (set (reduce process-overlaps [] (parse-input input))))
+  (->> (parse-input input)
+       (reduce process-overlaps [])
        (map cube-volume)
        (reduce +)))
 
-(comment
-  (let [processed [{:state "on", :x [10 12], :y [10 12], :z [10 12]}
-                   {:state "on", :x [11 13], :y [11 13], :z [11 13]}
-                   {:state "off", :x [11 12], :y [11 12], :z [11 12]}]
-        [new-step] (drop 2 (parse-input (:4-step samples)))]
-    (apply conj processed new-step
-           (concat (->> processed
-                        (filter (comp #{"on"} :state))
-                        (keep (partial cube-intersection new-step))
-                        (map (partial merge {:state "off"})))
-                   (->> processed
-                        (filter (comp #{"off"} :state))
-                        (keep (partial cube-intersection new-step))
-                        (map (partial merge {:state "on"}))))))
-
-  (-> (parse-input (:4-step samples))
-      (->> (filter (comp #{"on"} :state)))
-      (combinatorics/combinations 2)
-      (->> (keep (partial apply cube-intersection)))))
-
-(defn negative-spaces
-  [all-cubes]
-  (-> all-cubes
-      (->> (filter (comp #{"on"} :state)))
-      (combinatorics/combinations 2)
-      (->> (keep (partial apply cube-intersection))
-           (map (partial merge {:state "off"})))))
-
-(comment
-  (negative-spaces (parse-input (:4-step samples))))
-
-(comment
+(defn part-1-fast
+  []
   (->> (parse-input input)
-       (reduce process-overlaps [])))
+       (filter #(cubes-intersect? init-area %))
+       (reduce process-overlaps [])
+       (map cube-volume)
+       (reduce +)))
