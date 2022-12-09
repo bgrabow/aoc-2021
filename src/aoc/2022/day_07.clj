@@ -63,3 +63,21 @@
 
 (comment
   (solve-1 input))
+
+(def total-disk-space 70000000)
+(def required-disk-space 30000000)
+
+(defn solve-2
+  [s]
+  (let [state (reduce operate {} (parse-instructions s))
+        total-used-space (dirsize state ["/"])
+        big-enough-dirsizes (sort (for [[dirpath _contents] (:dirs state)
+                                        :let [size (dirsize state dirpath)]
+                                        :when (>= (+ (- total-disk-space total-used-space)
+                                                     size)
+                                                  required-disk-space)]
+                                    size))]
+    (first big-enough-dirsizes)))
+
+(comment
+  (solve-2 input))
