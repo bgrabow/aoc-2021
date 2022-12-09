@@ -57,6 +57,27 @@
                               :else ".")))))
        \newline))
 
+(defn char-at
+  [start rope pos]
+  (or (first
+        (keep-indexed
+          (fn [i a]
+            (when (= pos a)
+              (if (zero? i) "H" i)))
+          rope))
+      (and (= start pos) "s")
+      "."))
+
+(defn rope->str
+  [range-x range-y start rope]
+  (str (str/join
+         \newline
+         (for [y (reverse range-y)]
+           (apply str
+             (for [x range-x]
+               (char-at start rope [x y])))))
+       \newline))
+
 (move-1 {:h [4 4], :t [4 3]} [-1 0])
 
 (def example-1 "R 4\nU 4\nL 3\nD 1\nR 4\nD 1\nL 5\nR 2")
@@ -71,3 +92,22 @@
 (comment
   (solve-1 example-1)
   (solve-1 input))
+
+(defn move-rope-1
+  [rope dir]
+  (reduce
+    (fn [rope knot]
+      (conj rope (catch-up (peek rope) knot)))
+    [(mapv + dir (rope 0))]
+    (rest rope)))
+
+(defn solve-2
+  [s]
+  (->> (expand-steps (parse-input s))
+       (reductions move-rope-1 (vec (repeat 10 [0 0])))
+       (map last)
+       (set)
+       (count)))
+
+(comment
+  (solve-2 input))
