@@ -39,3 +39,27 @@
 
 (comment
   (solve-1 input))
+
+(defn sprite-positions
+  [{:keys [x]}]
+  (set (range (dec x) (+ 2 x))))
+
+(defn draw
+  [history]
+  (->> (map :pixel history)
+       (partition 40)
+       (map #(apply str %))))
+
+(defn solve-2
+  [s]
+  (->> (reductions step [{:x 1 :cycle 1}] (parse-input s))
+       (apply concat)
+       (map #(assoc %
+               :sprite-positions (sprite-positions %)
+               :pixel (if (get (sprite-positions %) (rem (dec (:cycle %)) 40))
+                        "#"
+                        ".")))
+       (draw)))
+
+(comment
+  (solve-2 input))
