@@ -49,15 +49,38 @@
         (update-in [monkey :items] next)
         (update-in [dest :items] #(conj (vec %) worry-level)))))
 
+(defn throw-item-2
+  [state monkey]
+  (let [item (first (:items (get state monkey)))
+        lcm (apply * (map :test (vals state)))
+        worry-level (rem ((:operation (get state monkey)) item) lcm)
+        test (zero? (rem worry-level (:test (get state monkey))))
+        dest (if test
+               (:true-dest (get state monkey))
+               (:false-dest (get state monkey)))]
+    (-> state
+        (update-in [monkey :items] next)
+        (update-in [dest :items] #(conj (vec %) worry-level)))))
+
 (defn throw-all
   [state monkey]
   (->> (iterate #(throw-item % monkey) state)
        (drop-while #(seq (:items (get % monkey))))
        (first)))
 
+(defn throw-all-2
+  [state monkey]
+  (->> (iterate #(throw-item-2 % monkey) state)
+       (drop-while #(seq (:items (get % monkey))))
+       (first)))
+
 (defn round
   [state]
   (reductions throw-all state (sort (keys state))))
+
+(defn round-2
+  [state]
+  (reductions throw-all-2 state (sort (keys state))))
 
 (defn round->inspected-items
   [round]
@@ -83,3 +106,14 @@
 
 (comment
   (solve-1 input))
+
+(defn solve-2
+  [s]
+  (->> (iterate (comp round-2 last) (round-2 (parse-input s)))
+       (take 10000)
+       (map round->inspected-items)
+       (apply merge-with +)
+       (monkey-business)))
+
+(comment
+  (solve-2 input))
