@@ -1,5 +1,6 @@
 (ns aoc.util
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [clojure.data.priority-map :as pm]))
 
 (defn read-input*
   [ns]
@@ -57,3 +58,34 @@
   (let [[l r] (split-with (complement f) coll)]
     (concat l (take 1 r))))
 
+(defn step-dijkstra
+  [neighbors-fn step-cost-fn state]
+  (let [[pos cost] (peek (:frontier state))]
+    {:frontier (reduce
+                 conj
+                 (pop (:frontier state))
+                 (->> (neighbors-fn pos)
+                      (remove (:visited state))
+                      (remove (:frontier state))
+                      (map (juxt identity #(+ cost (step-cost-fn pos %))))))
+     :visited  (conj (:visited state) (peek (:frontier state)))}))
+
+(defn dijkstra
+  [neighbors-fn step-cost-fn origin destination]
+  (->> (iterate
+         (partial step-dijkstra neighbors-fn step-cost-fn)
+         {:frontier (pm/priority-map origin 0)
+          :visited  {}})
+       (take-while #(seq (:frontier %)))
+       (filter #((:visited %) destination))
+       (first)))
+
+(defn dijkstra-2
+  [neighbors-fn step-cost-fn origin destination-fn]
+  (->> (iterate
+         (partial step-dijkstra neighbors-fn step-cost-fn)
+         {:frontier (pm/priority-map origin 0)
+          :visited  {}})
+       (take-while #(seq (:frontier %)))
+       (filter #(destination-fn (:visited %)))
+       (first)))
