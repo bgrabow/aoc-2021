@@ -64,27 +64,27 @@
 
 (defn solve-2
   [s]
-  #_(let [heightmap (parse-input s)
-          destination (fn [pos] (#{\a \S} (get-in heightmap pos)))
-          origin (find-in-mat heightmap \E)]
-      (-> (util/dijkstra-2
-            (partial neighbors-down heightmap)
-            (constantly 1)
-            origin
-            destination)
-          (:visited)
-          (->> (filter (comp destination first)))))
   (let [heightmap (parse-input s)
-        destination (find-in-mat heightmap \E)]
-    (->> (for [origin (find-all heightmap \a)]
-           (-> (util/dijkstra
-                 (partial neighbors heightmap)
-                 (constantly 1)
-                 origin
-                 destination)
-               (get-in [:visited destination])))
-         (remove nil?)
-         (apply min))))
+        destination (fn [pos] (#{\a \S} (get-in heightmap pos)))
+        origin (find-in-mat heightmap \E)]
+    (-> (util/dijkstra-2
+          (partial neighbors-down heightmap)
+          (constantly 1)
+          origin
+          destination)
+        (:visited)
+        (->> (filter (comp destination first)))))
+  #_(let [heightmap (parse-input s)
+          destination (find-in-mat heightmap \E)]
+      (->> (for [origin (find-all heightmap \a)]
+             (-> (util/dijkstra
+                   (partial neighbors heightmap)
+                   (constantly 1)
+                   origin
+                   destination)
+                 (get-in [:visited destination])))
+           (remove nil?)
+           (apply min))))
 
 (comment
   (solve-2 input))

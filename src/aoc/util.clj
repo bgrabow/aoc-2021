@@ -87,5 +87,5 @@
          {:frontier (pm/priority-map origin 0)
           :visited  {}})
        (take-while #(seq (:frontier %)))
-       (filter #(destination-fn (:visited %)))
+       (filter #(some (comp destination-fn first) (:visited %)))
        (first)))
