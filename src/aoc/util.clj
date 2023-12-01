@@ -4,12 +4,8 @@
 
 (defn read-input*
   [ns]
-  (slurp (format "resources/input/%s.txt"
-                 (-> (ns-name ns)
-                     str
-                     (str/split #"\.")
-                     (last)
-                     (str/replace #"-" "_")))))
+  (let [[_ year day] (re-find #"aoc\.(\d+)\.day-(\d+)" (str (ns-name ns)))]
+    (slurp (format "resources/%s/input%s.txt" year day))))
 
 (defmacro read-input
   []
